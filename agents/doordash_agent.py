@@ -1,6 +1,4 @@
-import anthropic
 from agents.base_agent import BaseAgent
-from memory.memory_store import MemoryStore
 
 
 class DoorDashAgent(BaseAgent):
@@ -25,7 +23,7 @@ You help users order food through DoorDash. Your responsibilities:
 
 ### Restaurant & Meal Discovery
 - Ask for or use provided: location, cuisine preference, dietary restrictions, budget.
-- Suggest 2–3 restaurants that match the criteria with estimated delivery time and fee.
+- Suggest 2-3 restaurants that match the criteria with estimated delivery time and fee.
 - Highlight DashPass restaurants to save on fees.
 
 ### Dietary Filtering
@@ -38,26 +36,22 @@ You help users order food through DoorDash. Your responsibilities:
 - Highlight combo deals or "most ordered" items.
 
 ### Scheduling
-- If given a meal time, calculate when to place the order (typical delivery = 30–45 min).
+- If given a meal time, calculate when to place the order (typical delivery = 30-45 min).
 - Remind the user to schedule orders in advance for large groups.
 
 ### Output Format
-- Restaurant name — cuisine — avg delivery time — min order — DashPass Y/N
+- Restaurant name -- cuisine -- avg delivery time -- min order -- DashPass Y/N
 - Top 3 recommended dishes per restaurant with price
 - Order recommendation verdict
 
 ### Constraints
-- Do not fabricate real restaurant menus or prices — frame as illustrative guidance.
+- Do not fabricate real restaurant menus or prices -- frame as illustrative guidance.
 - Never store payment or address details.
 """
 
     def execute(self, task: str, context: dict) -> str:
-        # Pull user dietary preferences from shared context
         dietary = context.get("dietary_restrictions", "none specified")
         location = context.get("location", "not provided")
-        prior = self._recall("last_order")
-        prior_note = f"\n\nPrevious order context: {prior}" if prior else ""
-
         messages = [
             {
                 "role": "user",
@@ -65,12 +59,8 @@ You help users order food through DoorDash. Your responsibilities:
                     f"Session goal: {context.get('session_goal', 'N/A')}\n"
                     f"Location: {location}\n"
                     f"Dietary restrictions: {dietary}\n\n"
-                    f"Task: {task}{prior_note}"
+                    f"Task: {task}"
                 ),
             }
         ]
-        result = self._call_claude(messages)
-
-        self._remember("last_order", task)
-        self.memory.log(self.name, f"Completed: {task[:80]}")
-        return result
+        return self._call_claude(messages)

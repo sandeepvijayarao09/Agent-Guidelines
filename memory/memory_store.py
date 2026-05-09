@@ -35,10 +35,7 @@ class MemoryStore:
         with open(self.store_path, "w") as f:
             json.dump(self._state, f, indent=2)
 
-    # ── Task Queue ───────────────────────────────────────────────────────────
-
     def enqueue_task(self, task: dict, task_id: Optional[str] = None) -> str:
-        """Add a task to the end of the sequential queue."""
         task_id = task_id or str(uuid.uuid4())[:8]
         record = {
             "id": task_id,
@@ -51,7 +48,6 @@ class MemoryStore:
         return task_id
 
     def get_next_task(self) -> Optional[dict]:
-        """Pop the front of the queue and mark it active."""
         if not self._state["task_queue"]:
             return None
         task = self._state["task_queue"].pop(0)
@@ -92,16 +88,12 @@ class MemoryStore:
             "completed": len(self._state["completed_tasks"]),
         }
 
-    # ── Shared Context ───────────────────────────────────────────────────────
-
     def set_context(self, key: str, value: Any) -> None:
         self._state["context"][key] = value
         self._save()
 
     def get_context(self, key: str, default: Any = None) -> Any:
         return self._state["context"].get(key, default)
-
-    # ── Per-Agent Memory ─────────────────────────────────────────────────────
 
     def set_agent_memory(self, agent_name: str, key: str, value: Any) -> None:
         self._state["agent_memory"].setdefault(agent_name, {})[key] = value
@@ -112,8 +104,6 @@ class MemoryStore:
 
     def get_all_agent_memory(self, agent_name: str) -> dict:
         return self._state["agent_memory"].get(agent_name, {})
-
-    # ── Session Log ──────────────────────────────────────────────────────────
 
     def log(self, source: str, message: str) -> None:
         self._state["session_log"].append(
@@ -132,15 +122,11 @@ class MemoryStore:
         return self._state["completed_tasks"][-limit:]
 
     def reset_queue(self) -> None:
-        """Clear the task queue (completed tasks are preserved)."""
         self._state["task_queue"] = []
         self._state["active_task"] = None
         self._save()
 
-    # ── Inter-Agent Messaging ────────────────────────────────────────────────
-
     def send_message(self, from_agent: str, to_agent: str, message: Any) -> None:
-        """Post a message from one agent into another agent's inbox."""
         inbox = self._state.setdefault("agent_messages", {})
         inbox.setdefault(to_agent, []).append(
             {
@@ -153,7 +139,6 @@ class MemoryStore:
         self._save()
 
     def read_messages(self, agent_name: str, unread_only: bool = True) -> list:
-        """Return messages in an agent's inbox and mark them as read."""
         inbox = self._state.get("agent_messages", {}).get(agent_name, [])
         results = [m for m in inbox if not m["read"]] if unread_only else list(inbox)
         for m in inbox:
