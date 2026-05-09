@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Orchestrator Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0b0f1a; --surface:#131929; --card:#1a2235; --border:#232d44; --border-hi:#2e3f60;
+    --text:#e2e8f0; --text-dim:#6b7fa8; --text-muted:#3d4f72;
+    --idle:#334155; --idle-text:#64748b; --active:#1d4ed8; --active-glow:#3b82f6;
+    --queued:#78350f; --queued-text:#f59e0b; --done:#14532d; --done-text:#4ade80;
+    --fail:#7f1d1d; --fail-text:#f87171;
+    --amazon:#f97316; --doordash:#ef4444; --shopping:#a855f7; --planner:#3b82f6; --routine:#22c55e;
+    --radius:10px; --gap:14px;
+  }
+  html,body { height:100%; background:var(--bg); color:var(--text); font-family:'SF Mono','Fira Code',monospace; font-size:13px; line-height:1.5; overflow:hidden; }
+  #app { display:grid; height:100vh; grid-template-rows:54px 180px 1fr 160px; grid-template-columns:1fr 320px; grid-template-areas:"header header" "agents agents" "main sidebar" "log log"; gap:var(--gap); padding:var(--gap); }
+  #header { grid-area:header; display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:0 20px; }
+  #header h1 { font-size:15px; font-weight:700; letter-spacing:.04em; flex:1; }
+  #header h1 span { color:var(--active-glow); margin-right:8px; }
+  .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+  #ws-status { background:var(--fail); color:var(--fail-text); }
+  #ws-status.connected { background:var(--done); color:var(--done-text); }
+  #master-badge { background:var(--idle); color:var(--idle-text); }
+  #master-badge.running { background:var(--active); color:#bfdbfe; animation:header-pulse 2s ease-in-out infinite; }
+  @keyframes header-pulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+  .dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+  #stats-bar { margin-left:auto; display:flex; gap:18px; color:var(--text-dim); font-size:11px; }
+  #stats-bar strong { color:var(--text); }
+  #agents { grid-area:agents; display:grid; grid-template-columns:repeat(5,1fr); gap:var(--gap); }
+  .agent-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; cursor:pointer; transition:border-color .2s,transform .15s,box-shadow .2s; position:relative; overflow:hidden; user-select:none; }
+  .agent-card:hover { border-color:var(--border-hi); transform:translateY(-1px); }
+  .agent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0; opacity:.85; }
+  .agent-card[data-agent="AmazonAgent"]::before { background:var(--amazon); }
+  .agent-card[data-agent="DoorDashAgent"]::before { background:var(--doordash); }
+  .agent-card[data-agent="ShoppingAgent"]::before { background:var(--shopping); }
+  .agent-card[data-agent="PlannerAgent"]::before { background:var(--planner); }
+  .agent-card[data-agent="DailyRoutineAgent"]::before { background:var(--routine); }
+  .card-icon { font-size:22px; margin-bottom:6px; display:block; }
+  .card-name { font-size:11px; font-weight:700; letter-spacing:.04em; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-status { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; }
+  .status-idle { background:var(--idle); color:var(--idle-text); }
+  .status-active { background:var(--active); color:#bfdbfe; }
+  .status-queued { background:var(--queued); color:var(--queued-text); }
+  .status-completed { background:var(--done); color:var(--done-text); }
+  .status-failed { background:var(--fail); color:var(--fail-text); }
+  .card-meta { font-size:10px; color:var(--text-dim); display:flex; gap:10px; }
+  .card-task-preview { margin-top:6px; font-size:10px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:none; }
+  .agent-card.is-active { border-color:var(--active-glow); box-shadow:0 0 0 1px var(--active-glow),0 0 20px rgba(59,130,246,.25); animation:card-pulse 1.8s ease-in-out infinite; }
+  @keyframes card-pulse { 0%,100%{box-shadow:0 0 0 1px var(--active-glow),0 0 20px rgba(59,130,246,.2)} 50%{box-shadow:0 0 0 2px var(--active-glow),0 0 35px rgba(59,130,246,.45)} }
+  .agent-card.is-active .card-task-preview { display:block; }
+  #main { grid-area:main; display:flex; flex-direction:column; gap:var(--gap); overflow:hidden; }
+  #active-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; flex:0 0 auto; }
+  .panel-title { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; }
+  #active-content { display:flex; align-items:flex-start; gap:14px; }
+  #active-agent-tag { flex:0 0 auto; padding:4px 12px; border-radius:20px; background:var(--active); color:#bfdbfe; font-size:11px; font-weight:700; white-space:nowrap; }
+  #active-task-text { color:var(--text); font-size:12px; flex:1; line-height:1.6; }
+  #flow-diagram { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:11px; }
+  .flow-node { padding:3px 10px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text-dim); font-size:10px; font-weight:600; }
+  .flow-node.active-node { border-color:var(--active-glow); color:#93c5fd; }
+  .flow-arrow { color:var(--border-hi); font-size:14px; }
+  .flow-arrow.active-arrow { color:var(--active-glow); animation:arrow-flash 1s ease-in-out infinite; }
+  @keyframes arrow-flash { 0%,100%{opacity:1} 50%{opacity:.3} }
+  #completed-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; flex:1; overflow:hidden; display:flex; flex-direction:column; }
+  .task-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:5px; }
+  .task-item { display:flex; align-items:baseline; gap:8px; padding:5px 8px; border-radius:6px; background:var(--card); border:1px solid var(--border); font-size:11px; }
+  .task-agent { font-weight:700; flex:0 0 auto; font-size:10px; }
+  .task-text { color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .task-time { color:var(--text-muted); font-size:9px; flex:0 0 auto; }
+  .tag-done { color:var(--done-text); } .tag-fail { color:var(--fail-text); }
+  #sidebar { grid-area:sidebar; display:flex; flex-direction:column; gap:var(--gap); overflow:hidden; }
+  #queue-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; flex:1; overflow:hidden; display:flex; flex-direction:column; }
+  .queue-count-badge { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:var(--active); color:#bfdbfe; font-size:10px; font-weight:700; margin-left:6px; vertical-align:middle; }
+  .queue-item { display:flex; align-items:baseline; gap:8px; padding:6px 8px; border-radius:6px; border-left:3px solid var(--queued-text); background:var(--card); font-size:11px; margin-bottom:5px; }
+  .queue-pos { color:var(--queued-text); font-weight:700; font-size:10px; flex:0 0 16px; }
+  .queue-agent { font-weight:700; font-size:10px; color:var(--text-dim); flex:0 0 auto; }
+  .queue-text { color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  #messages-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 20px; flex:0 0 auto; }
+  .msg-item { display:flex; gap:6px; font-size:10px; color:var(--text-dim); padding:3px 0; border-bottom:1px solid var(--border); }
+  .msg-from { color:var(--active-glow); font-weight:700; } .msg-to { color:var(--queued-text); font-weight:700; } .msg-arrow { color:var(--border-hi); }
+  #log-area { grid-area:log; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px; display:flex; flex-direction:column; overflow:hidden; }
+  #log-scroll { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:1px; }
+  .log-entry { display:flex; gap:10px; padding:1px 0; font-size:11px; }
+  .log-ts { color:var(--text-muted); flex:0 0 58px; }
+  .log-source { flex:0 0 130px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .log-msg { color:var(--text-dim); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .src-master{color:#60a5fa} .src-amazon{color:var(--amazon)} .src-doordash{color:var(--doordash)} .src-shopping{color:var(--shopping)} .src-planner{color:var(--planner)} .src-routine{color:var(--routine)}
+  #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; }
+  #modal-overlay.open { display:flex; }
+  #modal-box { background:var(--card); border:1px solid var(--border-hi); border-radius:14px; width:min(680px,92vw); max-height:80vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,.6); }
+  #modal-header { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--border); }
+  #modal-title { font-size:13px; font-weight:700; flex:1; }
+  #modal-close { background:none; border:1px solid var(--border); color:var(--text-dim); width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  #modal-body { padding:20px; overflow-y:auto; flex:1; }
+  #modal-content { font-size:12px; line-height:1.7; color:var(--text-dim); white-space:pre-wrap; word-break:break-word; }
+  .empty-state { color:var(--text-muted); font-style:italic; text-align:center; padding:20px; }
+  ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <h1><span>◈</span> Agent Orchestrator</h1>
+    <span id="ws-status" class="badge"><span class="dot"></span> Connecting…</span>
+    <span id="master-badge" class="badge"><span class="dot"></span> MasterAgent: idle</span>
+    <div id="stats-bar"><span>Queued: <strong id="stat-queued">0</strong></span><span>Completed: <strong id="stat-completed">0</strong></span></div>
+  </header>
+  <section id="agents">
+    <div class="agent-card" data-agent="AmazonAgent" id="card-AmazonAgent" onclick="openMemory('AmazonAgent')"><span class="card-icon">🛒</span><div class="card-name">AmazonAgent</div><span class="card-status status-idle" id="status-AmazonAgent">idle</span><div class="card-meta"><span id="tasks-AmazonAgent">0 tasks</span><span id="mem-AmazonAgent">no memory</span></div><div class="card-task-preview" id="preview-AmazonAgent"></div></div>
+    <div class="agent-card" data-agent="DoorDashAgent" id="card-DoorDashAgent" onclick="openMemory('DoorDashAgent')"><span class="card-icon">🍕</span><div class="card-name">DoorDashAgent</div><span class="card-status status-idle" id="status-DoorDashAgent">idle</span><div class="card-meta"><span id="tasks-DoorDashAgent">0 tasks</span><span id="mem-DoorDashAgent">no memory</span></div><div class="card-task-preview" id="preview-DoorDashAgent"></div></div>
+    <div class="agent-card" data-agent="ShoppingAgent" id="card-ShoppingAgent" onclick="openMemory('ShoppingAgent')"><span class="card-icon">🛍️</span><div class="card-name">ShoppingAgent</div><span class="card-status status-idle" id="status-ShoppingAgent">idle</span><div class="card-meta"><span id="tasks-ShoppingAgent">0 tasks</span><span id="mem-ShoppingAgent">no memory</span></div><div class="card-task-preview" id="preview-ShoppingAgent"></div></div>
+    <div class="agent-card" data-agent="PlannerAgent" id="card-PlannerAgent" onclick="openMemory('PlannerAgent')"><span class="card-icon">📅</span><div class="card-name">PlannerAgent</div><span class="card-status status-idle" id="status-PlannerAgent">idle</span><div class="card-meta"><span id="tasks-PlannerAgent">0 tasks</span><span id="mem-PlannerAgent">no memory</span></div><div class="card-task-preview" id="preview-PlannerAgent"></div></div>
+    <div class="agent-card" data-agent="DailyRoutineAgent" id="card-DailyRoutineAgent" onclick="openMemory('DailyRoutineAgent')"><span class="card-icon">⏰</span><div class="card-name">DailyRoutineAgent</div><span class="card-status status-idle" id="status-DailyRoutineAgent">idle</span><div class="card-meta"><span id="tasks-DailyRoutineAgent">0 tasks</span><span id="mem-DailyRoutineAgent">no memory</span></div><div class="card-task-preview" id="preview-DailyRoutineAgent"></div></div>
+  </section>
+  <div id="main">
+    <div id="active-panel">
+      <div class="panel-title">Active Task</div>
+      <div id="active-content"><span class="empty-state">No active task — MasterAgent is idle</span></div>
+      <div id="flow-diagram">
+        <span class="flow-node" id="flow-master">MasterAgent</span>
+        <span class="flow-arrow" id="flow-arrow1">→</span>
+        <span class="flow-node" id="flow-agent">—</span>
+        <span class="flow-arrow" id="flow-arrow2">→</span>
+        <span class="flow-node" id="flow-mem">memory.md</span>
+      </div>
+    </div>
+    <div id="completed-panel"><div class="panel-title">Completed Tasks</div><div class="task-list" id="completed-list"><span class="empty-state">No completed tasks yet</span></div></div>
+  </div>
+  <div id="sidebar">
+    <div id="queue-panel"><div class="panel-title">Task Queue <span class="queue-count-badge" id="queue-badge">0</span></div><div class="task-list" id="queue-list"><span class="empty-state">Queue is empty</span></div></div>
+    <div id="messages-panel"><div class="panel-title">Agent Messages</div><div id="messages-list"><span class="empty-state" style="font-size:10px">No inter-agent messages</span></div></div>
+  </div>
+  <div id="log-area"><div class="panel-title">Session Log</div><div id="log-scroll"></div></div>
+</div>
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal-box">
+    <div id="modal-header"><div id="modal-agent-icon" style="font-size:18px"></div><div id="modal-title">Agent Memory</div><div id="modal-bytes" style="font-size:10px;color:var(--text-dim)"></div><button id="modal-close" onclick="closeModal()">&#x2715;</button></div>
+    <div id="modal-body"><pre id="modal-content"></pre></div>
+  </div>
+</div>
+<script>
+const AGENT_ICONS={AmazonAgent:'🛒',DoorDashAgent:'🍕',ShoppingAgent:'🛍️',PlannerAgent:'📅',DailyRoutineAgent:'⏰'};
+const SOURCE_CLASS={MasterAgent:'src-master',AmazonAgent:'src-amazon',DoorDashAgent:'src-doordash',ShoppingAgent:'src-shopping',PlannerAgent:'src-planner',DailyRoutineAgent:'src-routine'};
+let ws,reconnectTimer;
+function connect(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen=()=>{clearTimeout(reconnectTimer);setWs(true);};
+  ws.onmessage=(e)=>{try{render(JSON.parse(e.data));}catch(_){}};
+  ws.onclose=()=>{setWs(false);reconnectTimer=setTimeout(connect,2500);};
+  ws.onerror=()=>ws.close();
+  setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send('ping');},20000);
+}
+function setWs(ok){
+  const el=document.getElementById('ws-status');
+  el.className='badge'+(ok?' connected':'');
+  el.innerHTML=`<span class="dot"></span> ${ok?'Connected':'Reconnecting…'}`;
+}
+function render(s){
+  renderAgents(s.agents||[]);renderActiveTask(s.active_task);
+  renderQueue(s.task_queue||[]);renderCompleted(s.completed_tasks||[]);
+  renderLog(s.session_log||[]);renderMessages(s.agent_messages||{});renderStats(s);
+}
+function renderAgents(agents){
+  for(const a of agents){
+    const card=document.getElementById(`card-${a.name}`);
+    if(!card)continue;
+    document.getElementById(`status-${a.name}`).className=`card-status status-${a.status}`;
+    document.getElementById(`status-${a.name}`).textContent=a.status;
+    card.classList.toggle('is-active',a.status==='active');
+    document.getElementById(`tasks-${a.name}`).textContent=`${a.task_count} task${a.task_count!==1?'s':''}`;
+    document.getElementById(`mem-${a.name}`).textContent=a.has_memory?`${fmtB(a.memory_bytes)} memory`:'no memory';
+  }
+}
+function renderActiveTask(active){
+  const content=document.getElementById('active-content');
+  const master=document.getElementById('master-badge');
+  const fa=document.getElementById('flow-agent'),fa1=document.getElementById('flow-arrow1'),fa2=document.getElementById('flow-arrow2'),fm=document.getElementById('flow-master'),fmem=document.getElementById('flow-mem');
+  if(active){
+    master.className='badge running';master.innerHTML='<span class="dot"></span> MasterAgent: running';
+    fa.textContent=active.agent||'—';fa.className='flow-node active-node';
+    fa1.className='flow-arrow active-arrow';fa2.className='flow-arrow active-arrow';
+    fm.className='flow-node active-node';fmem.textContent=`${active.agent||'Agent'}-memory.md`;fmem.className='flow-node active-node';
+    if(!document.getElementById('active-agent-tag'))content.innerHTML='<span id="active-agent-tag"></span><div id="active-task-text"></div>';
+    document.getElementById('active-agent-tag').textContent=active.agent||'';
+    document.getElementById('active-task-text').textContent=active.task||'';
+    const p=document.getElementById(`preview-${active.agent}`);if(p)p.textContent=(active.task||'').slice(0,80);
+  }else{
+    master.className='badge';master.innerHTML='<span class="dot"></span> MasterAgent: idle';
+    content.innerHTML='<span class="empty-state">No active task — MasterAgent is idle</span>';
+    fa.textContent='—';fa.className='flow-node';fa1.className='flow-arrow';fa2.className='flow-arrow';
+    fm.className='flow-node';fmem.textContent='memory.md';fmem.className='flow-node';
+  }
+}
+function renderQueue(queue){
+  const list=document.getElementById('queue-list');document.getElementById('queue-badge').textContent=queue.length;
+  list.innerHTML=queue.length?queue.map((t,i)=>`<div class="queue-item"><span class="queue-pos">${i+1}</span><span class="queue-agent">${t.agent||'?'}</span><span class="queue-text">${esc(t.task||'')}</span></div>`).join(''):'<span class="empty-state">Queue is empty</span>';
+}
+function renderCompleted(tasks){
+  const list=document.getElementById('completed-list');
+  list.innerHTML=tasks.length?[...tasks].reverse().map(t=>`<div class="task-item"><span class="task-agent ${t.status==='completed'?'tag-done':'tag-fail'}">${t.status==='completed'?'✓':'✗'} ${t.agent||'?'}</span><span class="task-text">${esc(t.task||'')}</span><span class="task-time">${(t.completed_at||t.failed_at||'').slice(11,19)}</span></div>`).join(''):'<span class="empty-state">No completed tasks yet</span>';
+}
+function renderLog(entries){
+  const scroll=document.getElementById('log-scroll');
+  const atBottom=scroll.scrollHeight-scroll.clientHeight<=scroll.scrollTop+10;
+  scroll.innerHTML=entries.map(e=>`<div class="log-entry"><span class="log-ts">${(e.timestamp||'').slice(11,19)}</span><span class="log-source ${SOURCE_CLASS[e.source]||''}">${esc(e.source||'')}</span><span class="log-msg">${esc(e.message||'')}</span></div>`).join('');
+  if(atBottom)scroll.scrollTop=scroll.scrollHeight;
+}
+function renderMessages(msgs){
+  const list=document.getElementById('messages-list');const all=[];
+  for(const[to,items]of Object.entries(msgs))for(const m of items)all.push({from:m.from,to,ts:m.timestamp});
+  list.innerHTML=all.length?all.slice(-6).map(m=>`<div class="msg-item"><span class="msg-from">${m.from}</span><span class="msg-arrow">→</span><span class="msg-to">${m.to}</span><span style="margin-left:auto;color:var(--text-muted);font-size:9px">${(m.ts||'').slice(11,19)}</span></div>`).join(''):'<span class="empty-state" style="font-size:10px">No inter-agent messages</span>';
+}
+function renderStats(s){const q=s.queue_status||{};document.getElementById('stat-queued').textContent=q.queued??0;document.getElementById('stat-completed').textContent=q.completed??0;}
+function openMemory(name){
+  document.getElementById('modal-title').textContent=`${name} — Memory`;
+  document.getElementById('modal-agent-icon').textContent=AGENT_ICONS[name]||'🤖';
+  document.getElementById('modal-content').textContent='Loading…';
+  document.getElementById('modal-bytes').textContent='';
+  document.getElementById('modal-overlay').classList.add('open');
+  fetch(`/api/memory/${name}`).then(r=>r.json()).then(d=>{document.getElementById('modal-content').textContent=d.content||'*(empty)*';if(d.bytes)document.getElementById('modal-bytes').textContent=fmtB(d.bytes);}).catch(()=>{document.getElementById('modal-content').textContent='Failed to load memory.';});
+}
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modal-overlay')&&e.target!==document.getElementById('modal-close'))return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+document.addEventListener('keydown',(e)=>{if(e.key==='Escape')document.getElementById('modal-overlay').classList.remove('open');});
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtB(b){if(b<1024)return`${b} B`;if(b<1048576)return`${(b/1024).toFixed(1)} KB`;return`${(b/1048576).toFixed(1)} MB`;}
+connect();
+fetch('/api/state').then(r=>r.json()).then(render).catch(()=>{});
+</script>
+</body>
+</html>
