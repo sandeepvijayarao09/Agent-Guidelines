@@ -14,14 +14,10 @@
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance"
-      ],
-      "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "terminal.integrated.defaultProfile.linux": "bash"
-      }
+      ]
     }
   },
   "remoteEnv": {
-    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
+    "GOOGLE_API_KEY": "${localEnv:GOOGLE_API_KEY}"
   }
 }

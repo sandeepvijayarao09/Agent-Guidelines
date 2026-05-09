@@ -1,7 +1,10 @@
-import anthropic
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
+
+from google import genai
+from google.genai import types
 
 from config import MODEL, MAX_TOKENS_AGENT
 from memory.memory_store import MemoryStore
@@ -14,18 +17,20 @@ class BaseAgent(ABC):
     Public entry point is `run_task(task, context)` which enforces the strict
     agent flow:
         1. execute()               -- domain work (implemented by subclass)
-        2. _post_task_memory()     -- dedicated call to update {AgentName}-memory.md
+        2. _post_task_memory()     -- dedicated Gemini call to update {AgentName}-memory.md
         3. memory.log()            -- append to session log
 
     Subclasses must implement: name, description, domain_system_prompt, execute.
     They must NOT call memory.log() or write memory themselves.
     """
 
-    def __init__(self, memory: MemoryStore, client: anthropic.Anthropic):
+    def __init__(self, memory: MemoryStore, client: genai.Client):
         self.memory = memory
         self.client = client
         self._guidelines_text = self._load_guidelines()
         Path("memory").mkdir(exist_ok=True)
+
+    # ── Abstract interface ───────────────────────────────────────────────────
 
     @property
     @abstractmethod
@@ -42,7 +47,7 @@ class BaseAgent(ABC):
     @abstractmethod
     def execute(self, task: str, context: dict) -> str: ...
 
-    # ── Public entry point ───────────────────────────────────────────────────
+    # ── Public entry point (enforced agent flow) ──────────────────────────────
 
     def run_task(self, task: str, context: dict) -> str:
         result = self.execute(task, context)
@@ -50,7 +55,7 @@ class BaseAgent(ABC):
         self.memory.log(self.name, f"Completed: {task[:80]}")
         return result
 
-    # ── Markdown memory ──────────────────────────────────────────────────────
+    # ── Markdown memory ───────────────────────────────────────────────────────
 
     @property
     def _md_memory_path(self) -> Path:
@@ -65,43 +70,39 @@ class BaseAgent(ABC):
         self._md_memory_path.write_text(content.strip() + "\n")
 
     def _post_task_memory(self, task: str, result: str) -> None:
+        """Dedicated post-task call: rewrite the agent's markdown memory file."""
         current = self._load_md_memory()
-        current_section = (
-            f"## Your Current Memory\n{current}"
-            if current
-            else "## Your Current Memory\n*(empty -- this is your first task)*"
-        )
         system = (
-            f"You are **{self.name}**. Your only job right now is to update "
-            f"your personal memory file after completing a task.\n\n"
-            f"{current_section}\n\n"
+            f"You are **{self.name}**. Your only job is to update your personal memory file.\n\n"
+            f"## Your Current Memory\n{current if current else '*(empty — first task)*'}\n\n"
             "Rules:\n"
-            "- Consolidate and rewrite the full memory in well-structured markdown.\n"
-            "- Retain all previously important information unless it is clearly outdated.\n"
-            "- Add what you learned from this task: user preferences, decisions, context.\n"
-            "- Reply with ONLY the updated markdown memory -- no preamble, no commentary."
+            "- Rewrite the full memory in well-structured markdown.\n"
+            "- Retain all important prior information unless clearly outdated.\n"
+            "- Add what you learned: user preferences, decisions made, key context.\n"
+            "- Reply with ONLY the updated markdown — no preamble, no commentary."
         )
-        messages = [
-            {
-                "role": "user",
-                "content": (
-                    f"Task I just completed:\n{task}\n\n"
-                    f"My response:\n{result[:1500]}\n\n"
-                    "Write my updated memory file now."
-                ),
-            }
-        ]
-        response = self.client.messages.create(
+        response = self.client.models.generate_content(
             model=MODEL,
-            max_tokens=1024,
-            system=system,
-            messages=messages,
+            contents=[
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=(
+                        f"Task I just completed:\n{task}\n\n"
+                        f"My response:\n{result[:1500]}\n\n"
+                        "Write my updated memory file now."
+                    ))],
+                )
+            ],
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=1024,
+            ),
         )
-        updated = next((b.text for b in response.content if b.type == "text"), "")
+        updated = response.text or ""
         if updated.strip():
             self._save_md_memory(updated.strip())
 
-    # ── System prompt ────────────────────────────────────────────────────────
+    # ── System prompt ─────────────────────────────────────────────────────────
 
     def _load_guidelines(self) -> str:
         path = Path("guidelines/agent_guidelines.md")
@@ -109,42 +110,44 @@ class BaseAgent(ABC):
             "Follow all instructions carefully. Produce complete, accurate output."
         )
 
-    def _build_system(self) -> list[dict]:
+    def _build_system(self) -> str:
+        """Return a system instruction string for Gemini."""
         current_memory = self._load_md_memory()
         memory_section = (
             f"\n\n## Your Memory\n{current_memory}"
             if current_memory
-            else "\n\n## Your Memory\n*(empty -- no prior interactions recorded)*"
+            else "\n\n## Your Memory\n*(empty — no prior interactions recorded)*"
         )
-        return [
-            {
-                "type": "text",
-                "text": self._guidelines_text,
-                "cache_control": {"type": "ephemeral"},
-            },
-            {
-                "type": "text",
-                "text": (
-                    f"\n\n## Your Identity\nYou are **{self.name}**.\n\n"
-                    f"{self.domain_system_prompt}"
-                    f"{memory_section}"
-                ),
-            },
-        ]
+        return (
+            self._guidelines_text
+            + f"\n\n## Your Identity\nYou are **{self.name}**.\n\n"
+            + self.domain_system_prompt
+            + memory_section
+        )
 
     def _call_claude(self, messages: list[dict], extra_kwargs: dict | None = None) -> str:
-        kwargs = dict(
-            model=MODEL,
-            max_tokens=MAX_TOKENS_AGENT,
-            system=self._build_system(),
-            messages=messages,
-        )
-        if extra_kwargs:
-            kwargs.update(extra_kwargs)
-        response = self.client.messages.create(**kwargs)
-        return next((b.text for b in response.content if b.type == "text"), "")
+        """Call Gemini with the given messages and return the text response."""
+        contents = []
+        for msg in messages:
+            role = "user" if msg["role"] == "user" else "model"
+            content = msg["content"]
+            if isinstance(content, str):
+                contents.append(
+                    types.Content(role=role, parts=[types.Part(text=content)])
+                )
 
-    # ── MemoryStore helpers ──────────────────────────────────────────────────
+        config = types.GenerateContentConfig(
+            system_instruction=self._build_system(),
+            max_output_tokens=MAX_TOKENS_AGENT,
+        )
+        response = self.client.models.generate_content(
+            model=MODEL,
+            contents=contents,
+            config=config,
+        )
+        return response.text or ""
+
+    # ── MemoryStore helpers ───────────────────────────────────────────────────
 
     def _remember(self, key: str, value: Any) -> None:
         self.memory.set_agent_memory(self.name, key, value)
