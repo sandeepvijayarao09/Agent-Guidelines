@@ -8,7 +8,7 @@ Tasks are processed sequentially via the MemoryStore task queue.
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from google import genai
@@ -214,9 +214,17 @@ class MasterAgent:
 
         self.context: dict = {
             "session_goal": "",
-            "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
             **(session_context or {}),
         }
+
+        # Persistent chat history — survives across multiple run() calls
+        self._chat_history: list[types.Content] = []
+        self._config = types.GenerateContentConfig(
+            system_instruction=_build_master_system(self._guidelines),
+            max_output_tokens=MAX_TOKENS_MASTER,
+            tools=[AGENT_TOOLS],
+        )
 
         self._agents = {
             "AmazonAgent": AmazonAgent(self.memory, self.client),
@@ -287,31 +295,22 @@ class MasterAgent:
     # ── Agentic loop ─────────────────────────────────────────────────────────
 
     def run(self, user_request: str) -> str:
-        """Run the master agentic loop and return the final synthesised response."""
-        self.context["session_goal"] = user_request
-        self.memory.set_context("session_goal", user_request)
-        self.memory.log("MasterAgent", f"Session started: {user_request[:120]}")
+        """Append user message to chat history and run the agentic loop for this turn."""
+        self.memory.log("MasterAgent", f"User: {user_request[:120]}")
 
-        system = _build_master_system(self._guidelines)
-        config = types.GenerateContentConfig(
-            system_instruction=system,
-            max_output_tokens=MAX_TOKENS_MASTER,
-            tools=[AGENT_TOOLS],
-        )
-
-        contents: list[types.Content] = [
+        self._chat_history.append(
             types.Content(role="user", parts=[types.Part(text=user_request)])
-        ]
+        )
 
         while True:
             response = self.client.models.generate_content(
                 model=MODEL,
-                contents=contents,
-                config=config,
+                contents=self._chat_history,
+                config=self._config,
             )
 
             candidate = response.candidates[0]
-            contents.append(candidate.content)
+            self._chat_history.append(candidate.content)
 
             function_calls = [
                 p for p in candidate.content.parts if p.function_call
@@ -321,7 +320,7 @@ class MasterAgent:
                 final = "".join(
                     p.text for p in candidate.content.parts if p.text
                 )
-                self.memory.log("MasterAgent", "Session completed.")
+                self.memory.log("MasterAgent", f"Assistant: {final[:120]}")
                 return final
 
             response_parts: list[types.Part] = []
@@ -337,7 +336,7 @@ class MasterAgent:
                     )
                 )
 
-            contents.append(
+            self._chat_history.append(
                 types.Content(role="user", parts=response_parts)
             )
 
