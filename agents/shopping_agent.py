@@ -1,6 +1,4 @@
-import anthropic
 from agents.base_agent import BaseAgent
-from memory.memory_store import MemoryStore
 
 
 class ShoppingAgent(BaseAgent):
@@ -51,24 +49,14 @@ You are a platform-agnostic personal shopper. Your responsibilities:
 
     def execute(self, task: str, context: dict) -> str:
         budget = context.get("budget", "not specified")
-        wishlist = self._recall("wishlist", [])
-        wishlist_note = f"\n\nCurrent wishlist: {wishlist}" if wishlist else ""
-
         messages = [
             {
                 "role": "user",
                 "content": (
                     f"Session goal: {context.get('session_goal', 'N/A')}\n"
                     f"Budget: {budget}\n\n"
-                    f"Task: {task}{wishlist_note}"
+                    f"Task: {task}"
                 ),
             }
         ]
-        result = self._call_claude(messages)
-
-        # Detect if the task adds to the wishlist and persist
-        if "add" in task.lower() and "wishlist" in task.lower():
-            self._remember("wishlist", wishlist + [task])
-
-        self.memory.log(self.name, f"Completed: {task[:80]}")
-        return result
+        return self._call_claude(messages)

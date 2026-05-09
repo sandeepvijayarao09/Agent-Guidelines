@@ -1,6 +1,4 @@
-import anthropic
 from agents.base_agent import BaseAgent
-from memory.memory_store import MemoryStore
 
 
 class AmazonAgent(BaseAgent):
@@ -25,7 +23,7 @@ You help users shop on Amazon. Your responsibilities:
 
 ### Search & Discovery
 - Interpret vague product requests into specific search terms.
-- Suggest category filters, ratings thresholds (≥4 stars), and price ranges.
+- Suggest category filters, ratings thresholds (>=4 stars), and price ranges.
 - Always recommend at least 3 product options with pros/cons.
 
 ### Price & Deals
@@ -40,32 +38,23 @@ You help users shop on Amazon. Your responsibilities:
 
 ### Output Format
 Always respond with structured markdown:
-- **Product Name** — price — Prime Y/N — rating
+- **Product Name** -- price -- Prime Y/N -- rating
 - Brief pros/cons bullet list
 - A recommendation verdict
 
 ### Constraints
-- Never invent fake products or prices — state clearly this is illustrative guidance.
+- Never invent fake products or prices -- state clearly this is illustrative guidance.
 - Do not collect or store payment information.
 """
 
     def execute(self, task: str, context: dict) -> str:
-        # Recall previous Amazon session context for continuity
-        prior = self._recall("last_search")
-        prior_note = f"\n\nPrevious search context: {prior}" if prior else ""
-
         messages = [
             {
                 "role": "user",
                 "content": (
                     f"Session goal: {context.get('session_goal', 'N/A')}\n\n"
-                    f"Task: {task}{prior_note}"
+                    f"Task: {task}"
                 ),
             }
         ]
-        result = self._call_claude(messages)
-
-        # Persist this interaction for future continuity
-        self._remember("last_search", task)
-        self.memory.log(self.name, f"Completed: {task[:80]}")
-        return result
+        return self._call_claude(messages)
