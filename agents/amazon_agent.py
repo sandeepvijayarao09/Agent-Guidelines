@@ -57,4 +57,4 @@ Always respond with structured markdown:
                 ),
             }
         ]
-        return self._call_claude(messages)
+        return self._call_llm(messages)

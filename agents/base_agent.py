@@ -125,7 +125,7 @@ class BaseAgent(ABC):
             + memory_section
         )
 
-    def _call_claude(self, messages: list[dict], extra_kwargs: dict | None = None) -> str:
+    def _call_llm(self, messages: list[dict], extra_kwargs: dict | None = None) -> str:
         """Call Gemini with the given messages and return the text response."""
         contents = []
         for msg in messages:

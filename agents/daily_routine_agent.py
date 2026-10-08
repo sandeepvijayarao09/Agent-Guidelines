@@ -70,4 +70,4 @@ Tip: [one micro-improvement for tomorrow]
                 ),
             }
         ]
-        return self._call_claude(messages)
+        return self._call_llm(messages)

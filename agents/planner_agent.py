@@ -62,4 +62,4 @@ Follow with a "Priority Stack" section listing tasks by importance.
                 ),
             }
         ]
-        return self._call_claude(messages)
+        return self._call_llm(messages)
