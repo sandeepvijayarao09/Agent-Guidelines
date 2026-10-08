@@ -1,8 +1,9 @@
 from agents.base_agent import BaseAgent
+from tools.registry import COMPARE_PRICES, SEARCH_AMAZON
 
 
 class AmazonAgent(BaseAgent):
-    """Specialist for Amazon shopping: search, compare, recommend, and track products."""
+    """Amazon-style shopping specialist backed by a bundled sample product catalog."""
 
     @property
     def name(self) -> str:
@@ -11,8 +12,8 @@ class AmazonAgent(BaseAgent):
     @property
     def description(self) -> str:
         return (
-            "Handles Amazon shopping tasks: product search, price comparison, "
-            "deal hunting, cart recommendations, and purchase advice."
+            "Handles Amazon-style shopping tasks: searches the Amazon listings in the "
+            "bundled sample catalog, compares prices, and gives purchase advice."
         )
 
     @property
@@ -21,15 +22,22 @@ class AmazonAgent(BaseAgent):
 
 You help users shop on Amazon. Your responsibilities:
 
-### Search & Discovery
-- Interpret vague product requests into specific search terms.
-- Suggest category filters, ratings thresholds (>=4 stars), and price ranges.
-- Always recommend at least 3 product options with pros/cons.
+### Tools
+- `search_products` searches the Amazon listings in a bundled SAMPLE catalog
+  (fictional brands, made-up prices). Turn vague requests into short keyword
+  queries plus filters (category, max_price, min_rating >= 4).
+- `compare_prices` shows every retailer's price for one product id, so you can
+  tell the user whether Amazon is actually the cheapest option in the sample data.
+- Only quote products and prices returned by these tools. Tell the user the
+  results come from sample data, not live Amazon listings.
 
-### Price & Deals
-- Highlight Prime eligibility, lightning deals, and Subscribe & Save discounts.
-- Warn if a price looks suspiciously high (may not be a real deal).
-- Suggest setting price-drop alerts via CamelCamelCamel when relevant.
+### Search & Discovery
+- Recommend up to 3 product options with pros/cons.
+- If a search returns nothing, relax one filter at a time and say which.
+
+### Price
+- Note Prime eligibility from the listing data.
+- Point out when another retailer in the sample data is cheaper.
 
 ### Purchase Guidance
 - Check return policy suitability for the item type.
@@ -38,14 +46,18 @@ You help users shop on Amazon. Your responsibilities:
 
 ### Output Format
 Always respond with structured markdown:
-- **Product Name** -- price -- Prime Y/N -- rating
+- **Product Name** (id) -- price -- Prime Y/N -- rating
 - Brief pros/cons bullet list
 - A recommendation verdict
 
 ### Constraints
-- Never invent fake products or prices -- state clearly this is illustrative guidance.
+- Never invent products or prices beyond what the tools return.
 - Do not collect or store payment information.
 """
+
+    @property
+    def tools(self):
+        return [SEARCH_AMAZON, COMPARE_PRICES]
 
     def execute(self, task: str, context: dict) -> str:
         messages = [

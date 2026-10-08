@@ -1,0 +1,365 @@
+{
+  "_note": "SAMPLE DATA. Fictional restaurants, menus, prices and fees for exercising the agent tools offline. Not taken from DoorDash or any real restaurant.",
+  "currency": "USD",
+  "restaurants": [
+    {
+      "id": "r01",
+      "name": "Saffron Lane",
+      "cuisine": "indian",
+      "delivery_minutes": 40,
+      "delivery_fee": 2.99,
+      "service_fee_pct": 12,
+      "min_order": 15.0,
+      "subscription_eligible": true,
+      "rating": 4.6,
+      "menu": [
+        {
+          "id": "r01-1",
+          "name": "Chana Masala",
+          "price": 13.5,
+          "tags": [
+            "vegan",
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": []
+        },
+        {
+          "id": "r01-2",
+          "name": "Chicken Tikka Masala",
+          "price": 16.95,
+          "tags": [
+            "gluten-free"
+          ],
+          "allergens": [
+            "dairy"
+          ]
+        },
+        {
+          "id": "r01-3",
+          "name": "Palak Paneer",
+          "price": 14.95,
+          "tags": [
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": [
+            "dairy"
+          ]
+        },
+        {
+          "id": "r01-4",
+          "name": "Garlic Naan",
+          "price": 3.95,
+          "tags": [
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten",
+            "dairy"
+          ]
+        },
+        {
+          "id": "r01-5",
+          "name": "Vegetable Samosas (2)",
+          "price": 6.5,
+          "tags": [
+            "vegan",
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "r02",
+      "name": "Green Fork Kitchen",
+      "cuisine": "salads",
+      "delivery_minutes": 25,
+      "delivery_fee": 1.99,
+      "service_fee_pct": 10,
+      "min_order": 12.0,
+      "subscription_eligible": true,
+      "rating": 4.5,
+      "menu": [
+        {
+          "id": "r02-1",
+          "name": "Harvest Grain Bowl",
+          "price": 13.25,
+          "tags": [
+            "vegan",
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten"
+          ]
+        },
+        {
+          "id": "r02-2",
+          "name": "Chicken Caesar Salad",
+          "price": 12.95,
+          "tags": [],
+          "allergens": [
+            "dairy",
+            "egg",
+            "fish"
+          ]
+        },
+        {
+          "id": "r02-3",
+          "name": "Tofu Power Bowl",
+          "price": 13.75,
+          "tags": [
+            "vegan",
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": [
+            "soy"
+          ]
+        },
+        {
+          "id": "r02-4",
+          "name": "Lemon Lentil Soup",
+          "price": 6.95,
+          "tags": [
+            "vegan",
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": []
+        }
+      ]
+    },
+    {
+      "id": "r03",
+      "name": "Nonna's Oven",
+      "cuisine": "italian",
+      "delivery_minutes": 45,
+      "delivery_fee": 3.49,
+      "service_fee_pct": 15,
+      "min_order": 20.0,
+      "subscription_eligible": false,
+      "rating": 4.4,
+      "menu": [
+        {
+          "id": "r03-1",
+          "name": "Margherita Pizza 12in",
+          "price": 15.0,
+          "tags": [
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten",
+            "dairy"
+          ]
+        },
+        {
+          "id": "r03-2",
+          "name": "Spaghetti Bolognese",
+          "price": 17.5,
+          "tags": [],
+          "allergens": [
+            "gluten"
+          ]
+        },
+        {
+          "id": "r03-3",
+          "name": "Gluten-Free Penne Arrabbiata",
+          "price": 16.0,
+          "tags": [
+            "vegan",
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": []
+        },
+        {
+          "id": "r03-4",
+          "name": "Tiramisu",
+          "price": 8.0,
+          "tags": [
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten",
+            "dairy",
+            "egg"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "r04",
+      "name": "Tokyo Corner",
+      "cuisine": "japanese",
+      "delivery_minutes": 35,
+      "delivery_fee": 2.49,
+      "service_fee_pct": 12,
+      "min_order": 15.0,
+      "subscription_eligible": true,
+      "rating": 4.7,
+      "menu": [
+        {
+          "id": "r04-1",
+          "name": "Salmon Avocado Roll",
+          "price": 9.5,
+          "tags": [
+            "gluten-free"
+          ],
+          "allergens": [
+            "fish"
+          ]
+        },
+        {
+          "id": "r04-2",
+          "name": "Vegetable Tempura Udon",
+          "price": 14.5,
+          "tags": [
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten",
+            "egg"
+          ]
+        },
+        {
+          "id": "r04-3",
+          "name": "Chicken Teriyaki Bowl",
+          "price": 15.25,
+          "tags": [],
+          "allergens": [
+            "soy",
+            "gluten"
+          ]
+        },
+        {
+          "id": "r04-4",
+          "name": "Edamame",
+          "price": 5.0,
+          "tags": [
+            "vegan",
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": [
+            "soy"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "r05",
+      "name": "Casa Verde Taqueria",
+      "cuisine": "mexican",
+      "delivery_minutes": 30,
+      "delivery_fee": 0.99,
+      "service_fee_pct": 10,
+      "min_order": 10.0,
+      "subscription_eligible": true,
+      "rating": 4.3,
+      "menu": [
+        {
+          "id": "r05-1",
+          "name": "Black Bean Burrito",
+          "price": 11.5,
+          "tags": [
+            "vegan",
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten"
+          ]
+        },
+        {
+          "id": "r05-2",
+          "name": "Carne Asada Tacos (3)",
+          "price": 13.95,
+          "tags": [
+            "gluten-free"
+          ],
+          "allergens": []
+        },
+        {
+          "id": "r05-3",
+          "name": "Chicken Burrito Bowl",
+          "price": 12.95,
+          "tags": [
+            "gluten-free"
+          ],
+          "allergens": [
+            "dairy"
+          ]
+        },
+        {
+          "id": "r05-4",
+          "name": "Chips and Guacamole",
+          "price": 6.25,
+          "tags": [
+            "vegan",
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": []
+        }
+      ]
+    },
+    {
+      "id": "r06",
+      "name": "Smokestack BBQ",
+      "cuisine": "american",
+      "delivery_minutes": 50,
+      "delivery_fee": 3.99,
+      "service_fee_pct": 15,
+      "min_order": 25.0,
+      "subscription_eligible": false,
+      "rating": 4.2,
+      "menu": [
+        {
+          "id": "r06-1",
+          "name": "Pulled Pork Sandwich",
+          "price": 14.5,
+          "tags": [],
+          "allergens": [
+            "gluten"
+          ]
+        },
+        {
+          "id": "r06-2",
+          "name": "Half Rack Ribs",
+          "price": 22.0,
+          "tags": [
+            "gluten-free"
+          ],
+          "allergens": []
+        },
+        {
+          "id": "r06-3",
+          "name": "Mac and Cheese",
+          "price": 7.5,
+          "tags": [
+            "vegetarian"
+          ],
+          "allergens": [
+            "gluten",
+            "dairy"
+          ]
+        },
+        {
+          "id": "r06-4",
+          "name": "Coleslaw",
+          "price": 4.0,
+          "tags": [
+            "vegetarian",
+            "gluten-free"
+          ],
+          "allergens": [
+            "egg"
+          ]
+        }
+      ]
+    }
+  ]
+}

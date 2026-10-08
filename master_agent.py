@@ -9,12 +9,11 @@ Tasks are processed sequentially via the MemoryStore task queue.
 import json
 import os
 from datetime import datetime, timezone
-from pathlib import Path
 
 from google import genai
 from google.genai import types
 
-from config import MODEL, MAX_TOKENS_MASTER, MEMORY_PATH
+from config import GUIDELINES_DIR, MAX_TOKENS_MASTER, MEMORY_PATH, MODEL
 from memory.memory_store import MemoryStore
 from agents import (
     AmazonAgent,
@@ -33,8 +32,8 @@ AGENT_TOOLS = types.Tool(
             name="run_amazon_agent",
             description=(
                 "Delegate an Amazon shopping task to the AmazonAgent specialist. "
-                "Use for product searches, price comparisons, deal hunting, and "
-                "purchase guidance on Amazon."
+                "It searches the Amazon listings in a bundled sample product catalog, "
+                "compares prices across retailers, and gives purchase guidance."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -58,8 +57,8 @@ AGENT_TOOLS = types.Tool(
             name="run_doordash_agent",
             description=(
                 "Delegate a food delivery task to the DoorDashAgent specialist. "
-                "Use for restaurant discovery, meal recommendations, dietary filtering, "
-                "and DoorDash order planning."
+                "It searches bundled sample restaurant data by cuisine and dietary needs, "
+                "estimates itemised order totals, and works out when to order."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -80,8 +79,8 @@ AGENT_TOOLS = types.Tool(
             name="run_shopping_agent",
             description=(
                 "Delegate a general (non-Amazon) shopping task to the ShoppingAgent. "
-                "Use for multi-platform price comparisons, budget planning, gift "
-                "recommendations, coupon awareness, and wishlist management."
+                "Use for cross-retailer price comparisons over the sample catalog, "
+                "fitting a shopping list into a budget, and gift recommendations."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -175,7 +174,7 @@ AGENT_TOOLS = types.Tool(
 # ── Master agent guidelines ──────────────────────────────────────────────────
 
 def _load_master_guidelines() -> str:
-    path = Path("guidelines/master_guidelines.md")
+    path = GUIDELINES_DIR / "master_guidelines.md"
     return path.read_text() if path.exists() else (
         "Orchestrate specialist agents in sequence. Never skip tasks. "
         "Verify each result before proceeding to the next."
@@ -194,9 +193,9 @@ def _build_master_system(guidelines: str) -> str:
         "`notify_agent` in the tool call and `read_agent_messages` before "
         "the receiving agent's turn.\n\n"
         "Available specialists:\n"
-        "- `run_amazon_agent` — Amazon product search & purchase guidance\n"
-        "- `run_doordash_agent` — DoorDash restaurant discovery & order planning\n"
-        "- `run_shopping_agent` — General multi-platform shopping & gifting\n"
+        "- `run_amazon_agent` — Amazon listings search (sample catalog) & purchase guidance\n"
+        "- `run_doordash_agent` — Restaurant search & order totals (sample data)\n"
+        "- `run_shopping_agent` — Cross-retailer price comparison, budgets & gifting\n"
         "- `run_planner_agent` — Day scheduling, priorities, calendar\n"
         "- `run_daily_routine_agent` — Habits, streaks, morning/evening routines\n"
         "- `read_agent_messages` — Check an agent's inbox before dispatching\n"
@@ -207,9 +206,15 @@ def _build_master_system(guidelines: str) -> str:
 # ── Master agent ─────────────────────────────────────────────────────────────
 
 class MasterAgent:
-    def __init__(self, session_context: dict | None = None):
-        self.client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
-        self.memory = MemoryStore(MEMORY_PATH)
+    def __init__(
+        self,
+        session_context: dict | None = None,
+        client: genai.Client | None = None,
+        memory: MemoryStore | None = None,
+    ):
+        # client and memory can be injected (tests and the offline demo pass a stub client).
+        self.client = client or genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
+        self.memory = memory or MemoryStore(MEMORY_PATH)
         self._guidelines = _load_master_guidelines()
 
         self.context: dict = {
@@ -345,6 +350,12 @@ class MasterAgent:
 
 if __name__ == "__main__":
     import sys
+
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    if not os.environ.get("GOOGLE_API_KEY"):
+        sys.exit("GOOGLE_API_KEY is not set. Copy .env.example to .env and add your key.")
 
     session_ctx: dict = {}
     for arg in sys.argv[1:]:

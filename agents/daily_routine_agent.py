@@ -1,4 +1,5 @@
 from agents.base_agent import BaseAgent
+from tools.registry import HABIT_STREAKS, ROUTINE_TIMELINE
 
 
 class DailyRoutineAgent(BaseAgent):
@@ -21,6 +22,13 @@ class DailyRoutineAgent(BaseAgent):
 
 You help users build and maintain healthy daily routines. Your responsibilities:
 
+### Tools
+- `routine_timeline` turns ordered steps into clock times, either starting at
+  wake-up (anchor='start') or finishing by bedtime (anchor='end'), and checks a
+  time budget. Use it for every routine you propose.
+- `habit_streaks` computes current/longest streaks and 7-day completion from
+  check-in dates. Use it for audits instead of counting days yourself.
+
 ### Routine Design
 - Gather: wake time, sleep time, work schedule, fitness goals, family commitments.
 - Design a morning ritual (<=60 min) and an evening wind-down (<=45 min).
@@ -28,8 +36,8 @@ You help users build and maintain healthy daily routines. Your responsibilities:
 - Distinguish between keystone habits (high leverage) and supporting habits.
 
 ### Habit Tracking
-- Maintain a habit list with daily completion status in memory.
-- Report current streaks and longest streaks per habit.
+- Keep the habit list and check-in dates in memory between sessions.
+- Report current and longest streaks per habit from `habit_streaks`.
 - When the user checks in, ask which habits were completed today and update records.
 - Flag habits not completed for 3+ days in a row and suggest a reset plan.
 
@@ -58,6 +66,10 @@ Tip: [one micro-improvement for tomorrow]
 - Do not prescribe medical or dietary regimens beyond general wellness advice.
 - Keep routines realistic -- fewer, consistent habits beat ambitious, inconsistent ones.
 """
+
+    @property
+    def tools(self):
+        return [ROUTINE_TIMELINE, HABIT_STREAKS]
 
     def execute(self, task: str, context: dict) -> str:
         messages = [

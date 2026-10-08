@@ -1,4 +1,4 @@
-import os
+import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
@@ -6,8 +6,9 @@ from typing import Any
 from google import genai
 from google.genai import types
 
-from config import MODEL, MAX_TOKENS_AGENT
+from config import GUIDELINES_DIR, MAX_TOKENS_AGENT, MAX_TOOL_ROUNDS, MODEL
 from memory.memory_store import MemoryStore
+from tools.registry import ToolSpec
 
 
 class BaseAgent(ABC):
@@ -21,6 +22,8 @@ class BaseAgent(ABC):
         3. memory.log()            -- append to session log
 
     Subclasses must implement: name, description, domain_system_prompt, execute.
+    They may override `tools` to expose deterministic Python functions to
+    Gemini; _call_llm() then runs a function-calling loop over them.
     They must NOT call memory.log() or write memory themselves.
     """
 
@@ -28,7 +31,9 @@ class BaseAgent(ABC):
         self.memory = memory
         self.client = client
         self._guidelines_text = self._load_guidelines()
-        Path("memory").mkdir(exist_ok=True)
+        self._memory_dir = Path(memory.store_path).parent
+        self._memory_dir.mkdir(parents=True, exist_ok=True)
+        self.tool_calls: list[dict] = []
 
     # ── Abstract interface ───────────────────────────────────────────────────
 
@@ -47,6 +52,11 @@ class BaseAgent(ABC):
     @abstractmethod
     def execute(self, task: str, context: dict) -> str: ...
 
+    @property
+    def tools(self) -> list[ToolSpec]:
+        """Tools this agent may call. Default: none (prompt-only)."""
+        return []
+
     # ── Public entry point (enforced agent flow) ──────────────────────────────
 
     def run_task(self, task: str, context: dict) -> str:
@@ -59,7 +69,7 @@ class BaseAgent(ABC):
 
     @property
     def _md_memory_path(self) -> Path:
-        return Path(f"memory/{self.name}-memory.md")
+        return self._memory_dir / f"{self.name}-memory.md"
 
     def _load_md_memory(self) -> str:
         if self._md_memory_path.exists():
@@ -105,7 +115,7 @@ class BaseAgent(ABC):
     # ── System prompt ─────────────────────────────────────────────────────────
 
     def _load_guidelines(self) -> str:
-        path = Path("guidelines/agent_guidelines.md")
+        path = GUIDELINES_DIR / "agent_guidelines.md"
         return path.read_text() if path.exists() else (
             "Follow all instructions carefully. Produce complete, accurate output."
         )
@@ -125,8 +135,14 @@ class BaseAgent(ABC):
             + memory_section
         )
 
-    def _call_llm(self, messages: list[dict], extra_kwargs: dict | None = None) -> str:
-        """Call Gemini with the given messages and return the text response."""
+    def _call_llm(self, messages: list[dict]) -> str:
+        """
+        Call Gemini and return the final text.
+
+        If the agent has tools, this runs the same function-calling loop as
+        MasterAgent: execute each requested tool locally, send the results
+        back, and repeat until Gemini answers in plain text.
+        """
         contents = []
         for msg in messages:
             role = "user" if msg["role"] == "user" else "model"
@@ -136,16 +152,57 @@ class BaseAgent(ABC):
                     types.Content(role=role, parts=[types.Part(text=content)])
                 )
 
+        specs = {spec.name: spec for spec in self.tools}
         config = types.GenerateContentConfig(
             system_instruction=self._build_system(),
             max_output_tokens=MAX_TOKENS_AGENT,
+            tools=[types.Tool(function_declarations=[s.declaration() for s in specs.values()])] if specs else None,
         )
-        response = self.client.models.generate_content(
-            model=MODEL,
-            contents=contents,
-            config=config,
-        )
-        return response.text or ""
+        self.tool_calls = []
+
+        for _ in range(MAX_TOOL_ROUNDS + 1):
+            response = self.client.models.generate_content(
+                model=MODEL,
+                contents=contents,
+                config=config,
+            )
+            candidate = response.candidates[0] if response.candidates else None
+            parts = (candidate.content.parts or []) if candidate and candidate.content else []
+            function_calls = [p.function_call for p in parts if p.function_call]
+            if not function_calls:
+                return "".join(p.text for p in parts if p.text) or (response.text or "")
+
+            contents.append(candidate.content)
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part(
+                            function_response=types.FunctionResponse(
+                                name=fc.name,
+                                response=self._run_tool(specs, fc.name, dict(fc.args or {})),
+                            )
+                        )
+                        for fc in function_calls
+                    ],
+                )
+            )
+
+        return f"[{self.name}] stopped after {MAX_TOOL_ROUNDS} tool rounds without a final answer."
+
+    def _run_tool(self, specs: dict[str, ToolSpec], name: str, args: dict) -> dict:
+        """Execute one tool call; errors go back to the model instead of crashing the agent."""
+        spec = specs.get(name)
+        if spec is None:
+            output = {"error": f"Unknown tool: {name}"}
+        else:
+            try:
+                output = {"result": spec.function(**args)}
+            except (TypeError, ValueError, KeyError) as exc:
+                output = {"error": f"{type(exc).__name__}: {exc}"}
+        self.tool_calls.append({"tool": name, "args": args, "ok": "error" not in output})
+        self.memory.log(self.name, f"Tool {name}({json.dumps(args)[:80]})" + ("" if "error" not in output else " -> error"))
+        return output
 
     # ── MemoryStore helpers ───────────────────────────────────────────────────
 

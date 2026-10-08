@@ -1,8 +1,9 @@
 from agents.base_agent import BaseAgent
+from tools.registry import BUILD_SCHEDULE, DATE_INFO
 
 
 class PlannerAgent(BaseAgent):
-    """Day-scheduling specialist: time-blocks, priorities, calendar integration advice."""
+    """Day-scheduling specialist: priorities from the LLM, clock math from build_schedule."""
 
     @property
     def name(self) -> str:
@@ -20,6 +21,14 @@ class PlannerAgent(BaseAgent):
         return """## Day Planner Specialist
 
 You build structured daily schedules. Your responsibilities:
+
+### Tools
+- `build_schedule` places tasks into the gaps between fixed events, splits long
+  tasks, adds breaks, and reports conflicts and anything that didn't fit.
+  Always build the timetable with it; never do clock arithmetic yourself.
+- `date_info` resolves weekdays and day offsets ("next Friday", "in 10 days").
+- Your job is choosing durations, priorities and fixed events, then explaining
+  the result. Report any `unscheduled` tasks and `conflicts` honestly.
 
 ### Schedule Creation
 - Ask for or use: wake time, sleep time, fixed commitments (meetings, commute), energy patterns.
@@ -50,6 +59,10 @@ Follow with a "Priority Stack" section listing tasks by importance.
 - Never overload the schedule -- respect human limits.
 - Always include meals and at least one movement block.
 """
+
+    @property
+    def tools(self):
+        return [BUILD_SCHEDULE, DATE_INFO]
 
     def execute(self, task: str, context: dict) -> str:
         messages = [

@@ -1,0 +1,615 @@
+{
+  "_note": "SAMPLE DATA. Fictional brands and made-up prices for exercising the agent tools offline. Not scraped from, affiliated with, or representative of any real retailer.",
+  "currency": "USD",
+  "products": [
+    {
+      "id": "p001",
+      "name": "Northwind Arc Wireless Headphones",
+      "category": "electronics",
+      "tags": [
+        "headphones",
+        "wireless",
+        "bluetooth",
+        "noise cancelling",
+        "audio"
+      ],
+      "rating": 4.5,
+      "review_count": 2310,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 129.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 124.0,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 134.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 129.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p002",
+      "name": "Northwind Pulse Earbuds",
+      "category": "electronics",
+      "tags": [
+        "earbuds",
+        "wireless",
+        "bluetooth",
+        "audio",
+        "workout"
+      ],
+      "rating": 4.2,
+      "review_count": 5120,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 49.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 47.88,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 49.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p003",
+      "name": "Lumen 27in 4K Monitor",
+      "category": "electronics",
+      "tags": [
+        "monitor",
+        "display",
+        "4k",
+        "home office",
+        "usb-c"
+      ],
+      "rating": 4.6,
+      "review_count": 880,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 289.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 279.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Walmart",
+          "price": 299.0,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p004",
+      "name": "Lumen Compact Mechanical Keyboard",
+      "category": "electronics",
+      "tags": [
+        "keyboard",
+        "mechanical",
+        "home office",
+        "wireless"
+      ],
+      "rating": 4.4,
+      "review_count": 1640,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 79.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 84.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 79.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p005",
+      "name": "Lumen Ergo Vertical Mouse",
+      "category": "electronics",
+      "tags": [
+        "mouse",
+        "ergonomic",
+        "home office",
+        "wireless"
+      ],
+      "rating": 4.3,
+      "review_count": 2950,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 34.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 32.5,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 39.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p006",
+      "name": "Ridgeback Adjustable Standing Desk 48in",
+      "category": "furniture",
+      "tags": [
+        "desk",
+        "standing desk",
+        "home office",
+        "adjustable"
+      ],
+      "rating": 4.4,
+      "review_count": 1210,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 249.0,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 239.0,
+          "shipping": 19.99,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 259.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p007",
+      "name": "Ridgeback Mesh Office Chair",
+      "category": "furniture",
+      "tags": [
+        "chair",
+        "office chair",
+        "ergonomic",
+        "home office"
+      ],
+      "rating": 4.1,
+      "review_count": 3400,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 159.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 149.0,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 169.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p008",
+      "name": "Kettlewise Electric Gooseneck Kettle",
+      "category": "kitchen",
+      "tags": [
+        "kettle",
+        "coffee",
+        "tea",
+        "gooseneck"
+      ],
+      "rating": 4.7,
+      "review_count": 6200,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 59.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Target",
+          "price": 54.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Walmart",
+          "price": 59.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p009",
+      "name": "Kettlewise Burr Coffee Grinder",
+      "category": "kitchen",
+      "tags": [
+        "coffee",
+        "grinder",
+        "burr"
+      ],
+      "rating": 4.5,
+      "review_count": 3100,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 99.95,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Target",
+          "price": 109.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 99.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p010",
+      "name": "Hearthline 6qt Air Fryer",
+      "category": "kitchen",
+      "tags": [
+        "air fryer",
+        "cooking",
+        "appliance"
+      ],
+      "rating": 4.6,
+      "review_count": 11800,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 89.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 79.0,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 89.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 94.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p011",
+      "name": "Hearthline 10in Cast Iron Skillet",
+      "category": "kitchen",
+      "tags": [
+        "skillet",
+        "cast iron",
+        "cooking",
+        "pan"
+      ],
+      "rating": 4.8,
+      "review_count": 9400,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 24.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 21.97,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 24.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p012",
+      "name": "Trailpeak Yoga Mat 6mm",
+      "category": "fitness",
+      "tags": [
+        "yoga",
+        "mat",
+        "exercise",
+        "workout"
+      ],
+      "rating": 4.5,
+      "review_count": 7300,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 29.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Target",
+          "price": 27.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Walmart",
+          "price": 25.0,
+          "shipping": 5.99,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p013",
+      "name": "Trailpeak Adjustable Dumbbells 25lb Pair",
+      "category": "fitness",
+      "tags": [
+        "dumbbells",
+        "weights",
+        "strength",
+        "workout"
+      ],
+      "rating": 4.3,
+      "review_count": 1900,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 149.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 139.0,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 159.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p014",
+      "name": "Trailpeak Insulated Water Bottle 32oz",
+      "category": "fitness",
+      "tags": [
+        "water bottle",
+        "insulated",
+        "hydration",
+        "gift"
+      ],
+      "rating": 4.7,
+      "review_count": 15200,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 32.95,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Target",
+          "price": 29.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Walmart",
+          "price": 32.95,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p015",
+      "name": "Pagewise E-Reader 7in",
+      "category": "electronics",
+      "tags": [
+        "e-reader",
+        "reading",
+        "books",
+        "gift"
+      ],
+      "rating": 4.6,
+      "review_count": 4100,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 139.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Best Buy",
+          "price": 139.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 144.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p016",
+      "name": "Stillroom Aromatherapy Diffuser",
+      "category": "home",
+      "tags": [
+        "diffuser",
+        "aromatherapy",
+        "sleep",
+        "gift",
+        "relaxation"
+      ],
+      "rating": 4.2,
+      "review_count": 2600,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 27.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Target",
+          "price": 24.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Walmart",
+          "price": 26.49,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p017",
+      "name": "Stillroom Sunrise Alarm Clock",
+      "category": "home",
+      "tags": [
+        "alarm clock",
+        "sunrise",
+        "sleep",
+        "morning routine",
+        "gift"
+      ],
+      "rating": 4.3,
+      "review_count": 3800,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 45.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Target",
+          "price": 49.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Walmart",
+          "price": 44.0,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    },
+    {
+      "id": "p018",
+      "name": "Brightdesk LED Desk Lamp",
+      "category": "home",
+      "tags": [
+        "lamp",
+        "desk lamp",
+        "led",
+        "home office"
+      ],
+      "rating": 4.5,
+      "review_count": 5400,
+      "listings": [
+        {
+          "retailer": "Amazon",
+          "price": 36.99,
+          "shipping": 0,
+          "prime": true
+        },
+        {
+          "retailer": "Walmart",
+          "price": 34.99,
+          "shipping": 0,
+          "prime": false
+        },
+        {
+          "retailer": "Target",
+          "price": 39.99,
+          "shipping": 0,
+          "prime": false
+        }
+      ]
+    }
+  ]
+}
