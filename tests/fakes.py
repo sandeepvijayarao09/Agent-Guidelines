@@ -42,6 +42,7 @@ class FakeClient:
     """
     master_script: responses for MasterAgent calls, in order.
     agent_script:  responses for specialist execute() calls, in order.
+    A script entry may be a response or a callable taking the request contents.
     Post-task memory rewrites are answered automatically.
     """
 
@@ -61,7 +62,10 @@ class FakeClient:
         script = self.master_script if kind == "master" else self.agent_script
         if not script:
             raise AssertionError(f"Unexpected {kind} call: script exhausted")
-        return script.pop(0)
+        step = script.pop(0)
+        # A callable step builds its response from what the model was sent
+        # (used by the offline demo to summarise real tool output).
+        return step(contents) if callable(step) else step
 
     def calls_of(self, kind: str) -> list[dict]:
         return [c for c in self.calls if c["kind"] == kind]

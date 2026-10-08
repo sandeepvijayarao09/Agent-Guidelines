@@ -10,6 +10,7 @@ Or directly:
 
 import asyncio
 import json
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -17,9 +18,12 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
-ROOT = Path(__file__).parent.parent
-MEMORY_DIR = ROOT / "memory"
-STATE_PATH = MEMORY_DIR / "state.json"
+if __package__ in (None, ""):  # allow `python dashboard/app.py`
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from config import MEMORY_DIR, MEMORY_PATH
+
+STATE_PATH = Path(MEMORY_PATH)
 INDEX_HTML = Path(__file__).parent / "index.html"
 
 AGENTS = [
