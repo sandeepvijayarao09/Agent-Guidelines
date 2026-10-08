@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 import uuid
@@ -25,13 +25,13 @@ class MemoryStore:
                 "context": {},
                 "agent_memory": {},
                 "session_log": [],
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             self._save()
 
     def _save(self) -> None:
-        self._state["updated_at"] = datetime.utcnow().isoformat()
+        self._state["updated_at"] = datetime.now(timezone.utc).isoformat()
         with open(self.store_path, "w") as f:
             json.dump(self._state, f, indent=2)
 
@@ -40,7 +40,7 @@ class MemoryStore:
         record = {
             "id": task_id,
             "status": "queued",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             **task,
         }
         self._state["task_queue"].append(record)
@@ -52,7 +52,7 @@ class MemoryStore:
             return None
         task = self._state["task_queue"].pop(0)
         task["status"] = "in_progress"
-        task["started_at"] = datetime.utcnow().isoformat()
+        task["started_at"] = datetime.now(timezone.utc).isoformat()
         self._state["active_task"] = task
         self._save()
         return task
@@ -63,7 +63,7 @@ class MemoryStore:
             active.update(
                 status="completed",
                 result=result,
-                completed_at=datetime.utcnow().isoformat(),
+                completed_at=datetime.now(timezone.utc).isoformat(),
             )
             self._state["completed_tasks"].append(active)
             self._state["active_task"] = None
@@ -75,7 +75,7 @@ class MemoryStore:
             active.update(
                 status="failed",
                 error=error,
-                failed_at=datetime.utcnow().isoformat(),
+                failed_at=datetime.now(timezone.utc).isoformat(),
             )
             self._state["completed_tasks"].append(active)
             self._state["active_task"] = None
@@ -108,7 +108,7 @@ class MemoryStore:
     def log(self, source: str, message: str) -> None:
         self._state["session_log"].append(
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "source": source,
                 "message": message,
             }
@@ -132,7 +132,7 @@ class MemoryStore:
             {
                 "from": from_agent,
                 "message": message,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "read": False,
             }
         )

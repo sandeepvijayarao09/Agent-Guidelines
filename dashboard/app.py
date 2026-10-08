@@ -10,6 +10,7 @@ Or directly:
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
@@ -30,9 +31,6 @@ AGENTS = [
 ]
 
 POLL_INTERVAL = 0.5
-
-app = FastAPI(title="Agent Dashboard")
-
 
 class ConnectionManager:
     def __init__(self) -> None:
@@ -120,6 +118,16 @@ def build_state() -> dict:
     }
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    poller = asyncio.create_task(_poll_state())
+    yield
+    poller.cancel()
+
+
+app = FastAPI(title="Agent Dashboard", lifespan=lifespan)
+
+
 @app.get("/", response_class=HTMLResponse)
 def serve_ui() -> HTMLResponse:
     return HTMLResponse(content=INDEX_HTML.read_text())
@@ -150,11 +158,6 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             await ws.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(ws)
-
-
-@app.on_event("startup")
-async def start_poller() -> None:
-    asyncio.create_task(_poll_state())
 
 
 async def _poll_state() -> None:
